@@ -1,0 +1,18 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Example Dashboard",
+    "panels": [
+      {
+        "type": "graph",
+        "title": "CPU Usage",
+        "targets": [
+          {
+            "expr": "node_cpu_seconds_total",
+            "legendFormat": "{{cpu}}"
+          }
+        ]
+      }
+    ]
+  }
+}
