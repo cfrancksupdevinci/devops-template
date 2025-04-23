@@ -1,0 +1,95 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8
+
+      - name: Run Linting
+        run: flake8 .
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Tests
+        run: python -m unittest discover
+
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Log in to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/my-app:latest .
+          docker push ${{ secrets.DOCKER_USERNAME }}/my-app:latest
+          deploy_staging:
+            name: Deploy to Staging
+            runs-on: ubuntu-latest
+            needs: build
+            steps:
+              - name: Checkout Code
+                uses: actions/checkout@v3
+
+              - name: Deploy to Staging
+                run: |
+                  echo "Deploying to Staging..."
+                  # Add your deployment script or commands here
+
+          deploy_production:
+            name: Deploy to Production
+            runs-on: ubuntu-latest
+            needs: deploy_staging
+            steps:
+              - name: Wait for Approval
+                uses: hmarr/auto-approve-action@v2
+                with:
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+
+              - name: Deploy to Production
+                run: |
+                  echo "Deploying to Production..."
+                  # Add your deployment script or commands here
